@@ -2,10 +2,9 @@
   "ExpandedNodes": [
     "",
     "\\BarberShop",
-    "\\BarberShop\\wwwroot\\css",
-    "\\BarberShop\\wwwroot\\js",
-    "\\BarberShop\\wwwroot\\lib"
+    "\\BarberShop\\Views",
+    "\\BarberShop\\Views\\Home"
   ],
-  "SelectedNode": "\\BarberShop",
+  "SelectedNode": "\\README.md",
   "PreviewInSolutionExplorer": true
 }
