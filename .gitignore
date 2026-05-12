@@ -84,3 +84,30 @@ connectionstrings.config
 
 # wwwroot/lib (gerenciado por LibMan/npm)
 wwwroot/lib/
+.vs/
+
+# Upgrade logs
+UpgradeLog*.htm
+Backup*/
+UpgradeLog*.XML
+
+# Database files
+*.mdf
+*.ldf
+*.ndf
+
+
+# Arquivos gerados pelo MSBuild/compilação
+**/obj/**/*
+**/bin/**/*
+*.cache
+*.AssemblyInfo.cs
+*.AssemblyInfoInputs.cache
+*.assets.cache
+*.csproj.nuget.dgspec.json
+*.csproj.nuget.g.props
+*.csproj.nuget.g.targets
+project.assets.json
+project.nuget.cache
+*.GeneratedMSBuildEditorConfig.editorconfig
+rpswa.dswa.cache.json
