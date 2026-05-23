@@ -50,10 +50,14 @@ Instale também o **SQL Server Management Studio (SSMS)** para gerenciar o banco
 ### Passo 2 — Crie o banco de dados
 
 1. Abra o **SSMS** e conecte no servidor `.\SQLEXPRESS`
-2. Clique em **New Query** (botão no canto superior esquerdo)
-3. Abra o arquivo `BancoSQL/CreateDB.sql` deste repositório (pode arrastar pra dentro do SSMS)
-4. Clique em **Execute** (ou aperte `F5`)
-5. O banco `BarbeariaJLMGG` será criado automaticamente com todas as tabelas e dados de exemplo
+  
+   <img width="503" height="598" alt="image" src="https://github.com/user-attachments/assets/1018f8b6-abfd-49b4-bd52-836cf95b7340" />
+
+
+4. Clique em **New Query** (botão no canto superior esquerdo)
+5. Abra o arquivo `BancoSQL/CreateDB.sql` deste repositório (pode arrastar pra dentro do SSMS)
+6. Clique em **Execute** (ou aperte `F5`)
+7. O banco `BarbeariaJLMGG` será criado automaticamente com todas as tabelas e dados de exemplo
 
 ### Passo 3 — Verifique a connection string
 
