@@ -61,7 +61,7 @@ def conectar_banco():
     try:
         conn = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server};'  # Precisa ter o driver instalado -> https://go.microsoft.com/fwlink/?linkid=2249004
-            'SERVER=localhost;'
+            'SERVER=.\SQLEXPRESS;'
             'DATABASE=BarbeariaJLMGG;'  # Nome do nosso banco de dados
             'Trusted_Connection=yes;'
         )
