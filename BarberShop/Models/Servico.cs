@@ -10,12 +10,13 @@ namespace BarberShop.Models
 
         public int CategoriaServicoId { get; set; }
 
+        [Column("Nome")]
+        private string nome = string.Empty;
         [Required, MaxLength(100)]
         [Display(Name = "Serviço")]
-        public string Nome { get; set; } = string.Empty;
+        public string Nome { get => nome; set => nome = value; }
 
         // null = "A consultar" — preço divulgado apenas após contato
-        [Display(Name = "Preço")]
         public decimal? Preco { get; set; }
 
         [Display(Name = "Duração (min)")]

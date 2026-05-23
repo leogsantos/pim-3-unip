@@ -17,24 +17,33 @@ namespace BarberShop.Models
         public DateTime DataHora { get; set; }
 
         // Valores possíveis: Confirmado, Cancelado, Concluido
+        [Column("Status")]
+        private string status = "Confirmado";
         [MaxLength(20)]
-        public string Status { get; set; } = "Confirmado";
+        public string Status { get => status; set => status = value; }
 
         // null quando o preço do serviço é "A consultar"
         [Display(Name = "Valor Total")]
         public decimal? ValorTotal { get; set; }
 
+        [Column("NomeCliente")]
+        private string nomeCliente = string.Empty;
         [Required, MaxLength(100)]
         [Display(Name = "Nome do Cliente")]
-        public string NomeCliente { get; set; } = string.Empty;
+        public string NomeCliente { get => nomeCliente; set => nomeCliente = value; }
 
+        [Column("TelefoneCliente")]
+        private string telefoneCliente = string.Empty;
         [Required, MaxLength(20)]
         [Display(Name = "Telefone")]
-        public string TelefoneCliente { get; set; } = string.Empty;
+        public string TelefoneCliente { get => telefoneCliente; set => telefoneCliente = value; }
 
+        // Nullable — preenchimento opcional pelo cliente
+        [Column("Observacoes")]
+        private string? observacoes;
         [MaxLength(500)]
         [Display(Name = "Observações")]
-        public string? Observacoes { get; set; }
+        public string? Observacoes { get => observacoes; set => observacoes = value; }
 
         public DateTime DataCriacao { get; set; } = DateTime.Now;
 

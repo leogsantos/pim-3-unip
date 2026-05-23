@@ -35,6 +35,49 @@ Banco de dados: Leo, Gabriel
 
 ---
 
+## Configurando o Banco de Dados (faça isso antes de rodar o projeto)
+
+> Siga esses passos **uma única vez** na sua máquina. Depois disso o projeto conecta sozinho.
+
+### Passo 1 — Instale o SQL Server Express
+
+Se ainda não tiver, baixe e instale gratuitamente:
+- https://www.microsoft.com/pt-br/sql-server/sql-server-downloads (escolha a versão **Express**)
+
+Instale também o **SQL Server Management Studio (SSMS)** para gerenciar o banco:
+- https://aka.ms/ssmsfullsetup
+
+### Passo 2 — Crie o banco de dados
+
+1. Abra o **SSMS** e conecte no servidor `.\SQLEXPRESS`
+2. Clique em **New Query** (botão no canto superior esquerdo)
+3. Abra o arquivo `BancoSQL/CreateDB.sql` deste repositório (pode arrastar pra dentro do SSMS)
+4. Clique em **Execute** (ou aperte `F5`)
+5. O banco `BarbeariaJLMGG` será criado automaticamente com todas as tabelas e dados de exemplo
+
+### Passo 3 — Verifique a connection string
+
+O arquivo `appsettings.json` já vem configurado para SQL Server Express:
+
+```json
+"ConnectionStrings": {
+  "DefaultConnection": "Server=.\\SQLEXPRESS;Database=BarbeariaJLMGG;Trusted_Connection=True;TrustServerCertificate=True;"
+}
+```
+
+**Se der erro de conexão**, o nome do seu servidor pode ser diferente. Para descobrir o nome correto:
+1. Abra o SSMS
+2. O nome que aparece no campo "Server name" é o que você deve usar no lugar de `.\SQLEXPRESS`
+
+Exemplos comuns:
+| Situação | Troque por |
+|---|---|
+| Instalou o SQL Server Express padrão | `.\SQLEXPRESS` já está certo |
+| Aparece `(localdb)\MSSQLLocalDB` no SSMS | `(localdb)\\MSSQLLocalDB` |
+| Aparece só o nome do PC | `.\` ou `NomeDoSeuPC` |
+
+---
+
 ## Logger
 
 A classe `AppLogger` (`BarberShop/Utils/AppLogger.cs`) centraliza os logs do projeto.
