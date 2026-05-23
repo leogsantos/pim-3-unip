@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BarberShop.Models
 {
+    [Table("Barbeiro")]
     public class Barbeiro
     {
         public int BarbeiroId { get; set; }
@@ -10,7 +12,7 @@ namespace BarberShop.Models
         [Display(Name = "Nome")]
         public string Nome { get; set; } = string.Empty;
 
-        // Short initials shown on the schedule grid (e.g. "JV")
+        // Sigla curta exibida na grade de agendamentos (ex: "JV")
         [Required, MaxLength(5)]
         public string Iniciais { get; set; } = string.Empty;
 

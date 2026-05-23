@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BarberShop.Models
 {
+    [Table("Agendamento")]
     public class Agendamento
     {
         public int AgendamentoId { get; set; }
@@ -14,11 +16,11 @@ namespace BarberShop.Models
         [Display(Name = "Data e Hora")]
         public DateTime DataHora { get; set; }
 
-        // Possible values: Confirmado, Cancelado, Concluido
+        // Valores possíveis: Confirmado, Cancelado, Concluido
         [MaxLength(20)]
         public string Status { get; set; } = "Confirmado";
 
-        // null when service price is "A consultar"
+        // null quando o preço do serviço é "A consultar"
         [Display(Name = "Valor Total")]
         public decimal? ValorTotal { get; set; }
 

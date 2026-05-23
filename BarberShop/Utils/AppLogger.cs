@@ -1,45 +1,45 @@
 namespace BarberShop.Utils
 {
     /// <summary>
-    /// Static logger that writes timestamped entries to logs/app-YYYY-MM-DD.log.
-    /// Thread-safe via lock. Call from any controller, service, or helper.
+    /// Logger estático que grava entradas com timestamp em logs/app-AAAA-MM-DD.log.
+    /// Thread-safe via lock. Pode ser chamado de qualquer controller, serviço ou helper.
     /// </summary>
     public static class AppLogger
     {
         private static readonly string LogDir =
             Path.Combine(Directory.GetCurrentDirectory(), "logs");
 
-        // Prevents interleaved writes from concurrent requests
+        // Evita gravações intercaladas em requisições concorrentes
         private static readonly object _lock = new();
 
-        public static void Info(string message) => Write("INFO", message);
+        public static void Info(string mensagem) => Write("INFO", mensagem);
 
-        public static void Warning(string message) => Write("WARN", message);
+        public static void Warning(string mensagem) => Write("WARN", mensagem);
 
-        public static void Error(string message, Exception? ex = null)
+        public static void Error(string mensagem, Exception? ex = null)
         {
-            string full = ex is null ? message : $"{message} | {ex}";
-            Write("ERROR", full);
+            string completo = ex is null ? mensagem : $"{mensagem} | {ex}";
+            Write("ERROR", completo);
         }
 
-        private static void Write(string level, string message)
+        private static void Write(string nivel, string mensagem)
         {
             try
             {
                 Directory.CreateDirectory(LogDir);
 
-                string filePath = Path.Combine(LogDir, $"app-{DateTime.Now:yyyy-MM-dd}.log");
-                string entry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{level,-5}] {message}";
+                string caminhoArquivo = Path.Combine(LogDir, $"app-{DateTime.Now:yyyy-MM-dd}.log");
+                string entrada = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{nivel,-5}] {mensagem}";
 
                 lock (_lock)
                 {
-                    File.AppendAllText(filePath, entry + Environment.NewLine);
+                    File.AppendAllText(caminhoArquivo, entrada + Environment.NewLine);
                 }
             }
             catch (Exception ex)
             {
-                // If the file write fails we don't crash the app — fall back to stderr
-                Console.Error.WriteLine($"[LOGGER ERROR] {ex.Message} | Original: [{level}] {message}");
+                // Se a gravação falhar, não derruba a aplicação — redireciona para stderr
+                Console.Error.WriteLine($"[ERRO NO LOGGER] {ex.Message} | Original: [{nivel}] {mensagem}");
             }
             finally
             {

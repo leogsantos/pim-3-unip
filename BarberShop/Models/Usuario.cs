@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BarberShop.Models
 {
+    [Table("Usuario")]
     public class Usuario
     {
         public int UsuarioId { get; set; }
@@ -21,7 +23,7 @@ namespace BarberShop.Models
         [Required, MaxLength(255)]
         public string Senha { get; set; } = string.Empty;
 
-        // "Cliente" or "Admin"
+        // Valores possíveis: "Cliente" ou "Admin"
         [MaxLength(20)]
         public string TipoUsuario { get; set; } = "Cliente";
 
