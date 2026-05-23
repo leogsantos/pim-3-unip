@@ -32,3 +32,49 @@ Banco de dados: Leo, Gabriel
 - [ ] Criar banco de dados
 - [ ] Documentar banco
 - [ ] Criar pasta "Data" para dar acesso as classes
+
+---
+
+## Logger
+
+A classe `AppLogger` (`BarberShop/Utils/AppLogger.cs`) centraliza os logs do projeto.
+Os arquivos são gerados automaticamente em `logs/app-YYYY-MM-DD.log` (rotação diária).
+A pasta `logs/` é ignorada pelo git.
+
+### Como usar
+
+```csharp
+using BarberShop.Utils;
+
+// Informação geral
+AppLogger.Info("Agendamento criado com sucesso.");
+
+// Aviso
+AppLogger.Warning("Horário solicitado está próximo de outro agendamento.");
+
+// Erro simples
+AppLogger.Error("Falha ao salvar agendamento.");
+
+// Erro com exceção capturada — recomendado no try-catch
+try
+{
+    // ... operação que pode falhar
+}
+catch (Exception ex)
+{
+    AppLogger.Error("Erro ao processar agendamento.", ex);
+    throw; // re-lança se necessário
+}
+finally
+{
+    AppLogger.Info("Bloco finally executado.");
+}
+```
+
+### Formato do arquivo de log
+
+```
+[2026-05-23 14:30:00] [INFO ] Agendamento criado com sucesso.
+[2026-05-23 14:30:05] [WARN ] Horário solicitado está próximo de outro agendamento.
+[2026-05-23 14:30:10] [ERROR] Erro ao processar agendamento. | System.Exception: ...
+```
