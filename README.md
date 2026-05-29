@@ -69,16 +69,51 @@ O arquivo `appsettings.json` já vem configurado para SQL Server Express:
 }
 ```
 
-**Se der erro de conexão**, o nome do seu servidor pode ser diferente. Para descobrir o nome correto:
-1. Abra o SSMS
-2. O nome que aparece no campo "Server name" é o que você deve usar no lugar de `.\SQLEXPRESS`
+**Se der erro de conexão**, siga o diagnóstico abaixo para descobrir a instância correta na sua máquina.
 
-Exemplos comuns:
-| Situação | Troque por |
+#### Diagnosticando a instância SQL correta
+
+**1. Liste os serviços SQL rodando na sua máquina (PowerShell):**
+
+```powershell
+Get-Service -Name '*sql*' | Select-Object Name, DisplayName, Status
+```
+
+Procure serviços com `Status = Running` e nome no formato `MSSQL$NOMEDAINSTANCIA`. Exemplos comuns:
+- `MSSQL$SQLEXPRESS` → instância `.\SQLEXPRESS`
+- `MSSQL$SQLEXPRESS01` → instância `.\SQLEXPRESS01`
+- `MSSQLSERVER` → instância padrão, usar só `.` ou `localhost`
+
+**2. Teste qual instância tem o banco `BarbeariaJLMGG`:**
+
+```powershell
+sqlcmd -S ".\SQLEXPRESS"   -Q "SELECT name FROM sys.databases WHERE name = 'BarbeariaJLMGG'"
+sqlcmd -S ".\SQLEXPRESS01" -Q "SELECT name FROM sys.databases WHERE name = 'BarbeariaJLMGG'"
+sqlcmd -S "."              -Q "SELECT name FROM sys.databases WHERE name = 'BarbeariaJLMGG'"
+```
+
+A que retornar `BarbeariaJLMGG` na coluna `name` é a instância correta.
+
+**3. Ajuste o `appsettings.json` com a instância encontrada:**
+
+| Instância encontrada | `Server=` no appsettings.json |
 |---|---|
-| Instalou o SQL Server Express padrão | `.\SQLEXPRESS` já está certo |
-| Aparece `(localdb)\MSSQLLocalDB` no SSMS | `(localdb)\\MSSQLLocalDB` |
-| Aparece só o nome do PC | `.\` ou `NomeDoSeuPC` |
+| `MSSQL$SQLEXPRESS` | `Server=.\\SQLEXPRESS` |
+| `MSSQL$SQLEXPRESS01` | `Server=.\\SQLEXPRESS01` |
+| `MSSQLSERVER` (padrão) | `Server=.` |
+| LocalDB | `Server=(localdb)\\MSSQLLocalDB` |
+
+**4. Verifique se a tabela `Usuario` existe e tem dados:**
+
+```powershell
+sqlcmd -S ".\SQLEXPRESS" -d "BarbeariaJLMGG" -Q "SELECT TOP 3 Nome, Email FROM Usuario"
+```
+
+Se retornar linhas, o banco está pronto. Se der erro de tabela não encontrada, execute o script `BancoSQL/CreateDB.sql` novamente (Passo 2).
+
+#### Testando o login
+
+Com o banco configurado, use qualquer e-mail e senha da tabela `Usuario` para logar. Os dados de exemplo gerados pelo script têm todos a senha `senha123hash`.
 
 ---
 
