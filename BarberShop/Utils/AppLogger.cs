@@ -6,8 +6,15 @@ namespace BarberShop.Utils
     /// </summary>
     public static class AppLogger
     {
-        private static readonly string LogDir =
+        // Inicializado pelo Program.cs com o ContentRootPath correto.
+        // Fallback para GetCurrentDirectory() caso Init() não seja chamado.
+        private static string LogDir =
             Path.Combine(Directory.GetCurrentDirectory(), "logs");
+
+        public static void Init(string contentRootPath)
+        {
+            LogDir = Path.Combine(contentRootPath, "logs");
+        }
 
         // Evita gravações intercaladas em requisições concorrentes
         private static readonly object _lock = new();

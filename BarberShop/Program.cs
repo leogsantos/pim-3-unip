@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using BarberShop.Data;
+using BarberShop.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.WebHost.UseStaticWebAssets();
 
 var app = builder.Build();
+
+// Aponta o logger para a pasta logs/ dentro da raiz do projeto
+AppLogger.Init(app.Environment.ContentRootPath);
 
 if (!app.Environment.IsDevelopment())
 {

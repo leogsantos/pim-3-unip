@@ -1,61 +1,63 @@
-﻿@model BarberShop.Models.Usuario
+@model BarberShop.Models.Usuario
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Criar Conta";
 }
 
-<h1>Create</h1>
-
-<h4>Usuario</h4>
+<h1>Criar Conta</h1>
 <hr />
+
 <div class="row">
     <div class="col-md-4">
+        @* asp-action="Create" diz pro formulário enviar os dados via POST para Usuarios/Create *@
         <form asp-action="Create">
+
+            @* asp-validation-summary exibe erros gerais do ModelState (não vinculados a um campo específico) *@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
             <div class="form-group">
+                @* asp-for="Nome" liga o label e o input à propriedade Nome do model Usuario *@
                 <label asp-for="Nome" class="control-label"></label>
                 <input asp-for="Nome" class="form-control" />
+                @* asp-validation-for exibe o erro desse campo específico (ex: "campo obrigatório") *@
                 <span asp-validation-for="Nome" class="text-danger"></span>
             </div>
+
             <div class="form-group">
                 <label asp-for="Email" class="control-label"></label>
                 <input asp-for="Email" class="form-control" />
                 <span asp-validation-for="Email" class="text-danger"></span>
             </div>
+
             <div class="form-group">
                 <label asp-for="Telefone" class="control-label"></label>
                 <input asp-for="Telefone" class="form-control" />
                 <span asp-validation-for="Telefone" class="text-danger"></span>
             </div>
+
             <div class="form-group">
                 <label asp-for="Senha" class="control-label"></label>
-                <input asp-for="Senha" class="form-control" />
+                @* type="password" faz os caracteres aparecerem como asteriscos *@
+                <input asp-for="Senha" type="password" class="form-control" />
                 <span asp-validation-for="Senha" class="text-danger"></span>
             </div>
+
             <div class="form-group">
-                <label asp-for="TipoUsuario" class="control-label"></label>
-                <input asp-for="TipoUsuario" class="form-control" />
-                <span asp-validation-for="TipoUsuario" class="text-danger"></span>
+                <label for="confirmarSenha" class="control-label">Confirmar Senha</label>
+                @* name="confirmarSenha" tem que bater com o parâmetro do método Create no controller *@
+                <input type="password" id="confirmarSenha" name="confirmarSenha" class="form-control" />
+                <span class="text-danger">@ViewData["ErrroConfirmarSenha"]</span>
             </div>
-            <div class="form-group">
-                <label asp-for="DataCadastro" class="control-label"></label>
-                <input asp-for="DataCadastro" class="form-control" />
-                <span asp-validation-for="DataCadastro" class="text-danger"></span>
-            </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="Ativo" /> @Html.DisplayNameFor(model => model.Ativo)
-                </label>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
+
+            <div class="form-group mt-3">
+                <input type="submit" value="Criar Conta" class="btn btn-primary" />
             </div>
         </form>
-    </div>
-</div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
+        <div class="mt-2">
+            <a asp-controller="Account" asp-action="Login">Já tem conta? Faça login</a>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

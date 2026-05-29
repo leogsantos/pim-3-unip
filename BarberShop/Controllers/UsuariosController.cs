@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BarberShop.Data;
 using BarberShop.Models;
+using BarberShop.Utils;
 
 namespace BarberShop.Controllers
 {
@@ -22,6 +18,7 @@ namespace BarberShop.Controllers
         // GET: Usuarios
         public async Task<IActionResult> Index()
         {
+            AppLogger.Info("Listagem de usuários acessada.");
             return View(await _context.Usuarios.ToListAsync());
         }
 
@@ -30,16 +27,18 @@ namespace BarberShop.Controllers
         {
             if (id == null)
             {
+                AppLogger.Warning("Details chamado sem ID.");
                 return NotFound();
             }
 
-            var usuario = await _context.Usuarios
-                .FirstOrDefaultAsync(m => m.UsuarioId == id);
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(m => m.UsuarioId == id);
             if (usuario == null)
             {
+                AppLogger.Warning($"Usuário não encontrado: ID {id}");
                 return NotFound();
             }
 
+            AppLogger.Info($"Detalhes exibidos: ID {id} ({usuario.Email})");
             return View(usuario);
         }
 
@@ -50,18 +49,37 @@ namespace BarberShop.Controllers
         }
 
         // POST: Usuarios/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("UsuarioId,Nome,Email,Telefone,Senha,TipoUsuario,DataCadastro,Ativo")] Usuario usuario)
+        public async Task<IActionResult> Create([Bind("Nome,Email,Telefone,Senha")] Usuario usuario, string confirmarSenha)
         {
+            usuario.TipoUsuario  = "Cliente";
+            usuario.Ativo        = true;
+            usuario.DataCadastro = DateTime.Now;
+
+            if (usuario.Senha != confirmarSenha)
+                ModelState.AddModelError("confirmarSenha", "As senhas não coincidem.");
+
+            var emailJaExiste = await _context.Usuarios.AnyAsync(u => u.Email == usuario.Email);
+            if (emailJaExiste)
+                ModelState.AddModelError("Email", "Este e-mail já está cadastrado.");
+
             if (ModelState.IsValid)
             {
-                _context.Add(usuario);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    _context.Add(usuario);
+                    await _context.SaveChangesAsync();
+                    AppLogger.Info($"Usuário criado via CRUD: {usuario.Email}");
+                    return RedirectToAction("Login", "Account");
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Error($"Erro ao criar usuário via CRUD: {usuario.Email}", ex);
+                    ModelState.AddModelError("", "Erro interno ao salvar. Tente novamente.");
+                }
             }
+
             return View(usuario);
         }
 
@@ -70,26 +88,28 @@ namespace BarberShop.Controllers
         {
             if (id == null)
             {
+                AppLogger.Warning("Edit chamado sem ID.");
                 return NotFound();
             }
 
             var usuario = await _context.Usuarios.FindAsync(id);
             if (usuario == null)
             {
+                AppLogger.Warning($"Edição: usuário não encontrado: ID {id}");
                 return NotFound();
             }
+
             return View(usuario);
         }
 
         // POST: Usuarios/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("UsuarioId,Nome,Email,Telefone,Senha,TipoUsuario,DataCadastro,Ativo")] Usuario usuario)
         {
             if (id != usuario.UsuarioId)
             {
+                AppLogger.Warning($"Edição: ID da rota ({id}) difere do model ({usuario.UsuarioId}).");
                 return NotFound();
             }
 
@@ -99,20 +119,21 @@ namespace BarberShop.Controllers
                 {
                     _context.Update(usuario);
                     await _context.SaveChangesAsync();
+                    AppLogger.Info($"Usuário editado: ID {id} ({usuario.Email})");
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (DbUpdateConcurrencyException ex)
                 {
                     if (!UsuarioExists(usuario.UsuarioId))
                     {
+                        AppLogger.Warning($"Edição: usuário não encontrado ao salvar: ID {id}");
                         return NotFound();
                     }
-                    else
-                    {
-                        throw;
-                    }
+                    AppLogger.Error($"Conflito de concorrência ao editar usuário: ID {id}", ex);
+                    throw;
                 }
                 return RedirectToAction(nameof(Index));
             }
+
             return View(usuario);
         }
 
@@ -121,13 +142,14 @@ namespace BarberShop.Controllers
         {
             if (id == null)
             {
+                AppLogger.Warning("Delete chamado sem ID.");
                 return NotFound();
             }
 
-            var usuario = await _context.Usuarios
-                .FirstOrDefaultAsync(m => m.UsuarioId == id);
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(m => m.UsuarioId == id);
             if (usuario == null)
             {
+                AppLogger.Warning($"Exclusão: usuário não encontrado: ID {id}");
                 return NotFound();
             }
 
@@ -143,9 +165,14 @@ namespace BarberShop.Controllers
             if (usuario != null)
             {
                 _context.Usuarios.Remove(usuario);
+                await _context.SaveChangesAsync();
+                AppLogger.Info($"Usuário excluído: ID {id} ({usuario.Email})");
+            }
+            else
+            {
+                AppLogger.Warning($"Exclusão: usuário ID {id} não encontrado.");
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
