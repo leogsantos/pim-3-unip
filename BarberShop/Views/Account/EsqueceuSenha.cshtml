@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@@latest/tabler-icons.min.css"/>
-<link rel="stylesheet" href="~/css/auth.css" />
+<link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
 </head>
 <body>
 
@@ -41,6 +41,9 @@
         <i class="ti ti-mail inp-icon"></i>
         <input type="email" id="forgot-email" placeholder="seu@email.com"/>
       </div>
+      <span id="forgot-email-erro" style="color:#e53935;font-size:.85rem;display:none;">
+        E-mail não encontrado. Verifique e tente novamente.
+      </span>
     </div>
     <button class="btn-confirm" onclick="sendCode()">
       <i class="ti ti-send"></i> ENVIAR CÓDIGO
@@ -117,6 +120,6 @@
 
 </div><!-- /auth-container -->
 
-<script src="~/js/password-reset.js"></script>
+<script src="~/js/password-reset.js" asp-append-version="true"></script>
 </body>
 </html>
