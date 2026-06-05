@@ -50,13 +50,13 @@ namespace BarberShop.Controllers
             if (user != null)
             {
                 var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.Name, user.Nome),
-        new Claim(ClaimTypes.Email, user.Email),
-        new Claim(ClaimTypes.Role, user.TipoUsuario),
-        new Claim("UsuarioId", user.UsuarioId.ToString()),
-        new Claim("Telefone", user.Telefone ?? "")
-    };
+            {
+                new Claim(ClaimTypes.Name, user.Nome),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.TipoUsuario),
+                new Claim("UsuarioId", user.UsuarioId.ToString()),
+                new Claim("Telefone", user.Telefone ?? "")
+            };
 
                 var identity = new ClaimsIdentity(
                     claims,
