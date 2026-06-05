@@ -23,29 +23,27 @@ const SERVICES={
     {name:'Platinado',desc:'Descoloração completa',price:'R$ 120'}
   ]
 };
+let servicosDb = [];
 const CAT_NAMES={corte:'Corte',infantil:'Corte Infantil',combos:'Combos',servicos:'Serviços',quimicas:'Químicas'};
-const BARBERS=[
-  {name:'João Pedro',initials:'JP'},
-  {name:'Leonardo',initials:'LE'},
-  {name:'Guilherme',initials:'GU'},
-  {name:'Gabriel',initials:'GA'},
-  {name:'Marcos',initials:'MA'}
-];
+let BARBERS = [];
 const ALL_TIMES=['09:00','09:30','10:00','10:30','11:00','11:30','13:00','13:30','14:00','14:30','15:00','16:00','16:30','17:00','18:00','18:30','19:00'];
 const MONTH_NAMES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-let state={service:null,date:null,barber:null,time:null,editIdx:null};
+let state = {service: null, serviceId: null, date: null, barber: null, barberId: null, time: null, editId: null};
 let appointments=[];
 let calState={month:0,year:0,selectedDay:null,selectedBarber:null,selectedTime:null,viewMonth:0};
-let loggedUser={name:'Administrador',email:'admin@barbearia.com',phone:''};
 
-// 25502550 INIT (sem login) 25502550
-window.addEventListener('DOMContentLoaded',function(){
+// 25502550 INIT 25502550
+window.addEventListener('DOMContentLoaded', async function () {
+
+  await carregarServicos();
+  await carregarBarbeiros();
+  await carregarDadosUsuario();
+
   updateStats();
+  updateAppts();
+
   gotoApp('a-home');
-  document.getElementById('sidebar-user-name').textContent=loggedUser.name;
-  document.getElementById('sidebar-user-email').textContent=loggedUser.email;
-  document.getElementById('user-avatar-initials').textContent='AD';
 });
 
 // ══ APP NAVIGATION ══
@@ -75,10 +73,23 @@ function showServices(catKey){
     list.appendChild(el);
   });
 }
+//Busca os servicos no banco
+function selectService(srv) {
 
-function selectService(srv){
-  state.service=srv;
-  document.getElementById('cal-srv-label-desk').textContent=srv.name;
+  state.service = srv;
+
+  const servicoBanco =
+    servicosDb.find(
+      x => x.nome === srv.name
+    );
+
+  if (servicoBanco)
+    state.serviceId = servicoBanco.id;
+
+  console.log("SERVICO ID:", state.serviceId);
+
+  document.getElementById('cal-srv-label-desk')
+    .textContent = srv.name;
   const now=new Date();
   calState.year=now.getFullYear();calState.month=now.getMonth();calState.viewMonth=now.getMonth();
   calState.selectedDay=null;calState.selectedBarber=null;calState.selectedTime=null;
@@ -134,13 +145,13 @@ function buildBarbers(){
     const slots=ALL_TIMES.filter((_,i)=>(i+bi)%3!==0);
     html+=`<div class="barber-card">
       <div class="barber-header">
-        <div class="barber-avatar">${b.initials}</div>
-        <div><div class="barber-name">${b.name}</div><div class="barber-slots-count">${slots.length} horários disponíveis</div></div>
+        <div class="barber-avatar">${b.iniciais}</div>
+        <div><div class="barber-name">${b.nome}</div><div class="barber-slots-count">${slots.length} horários disponíveis</div></div>
       </div>
       <div class="time-slots">`;
     slots.forEach(t=>{
-      const isSel=(calState.selectedBarber===b.name&&calState.selectedTime===t);
-      html+=`<div class="time-slot${isSel?' selected':''}" onclick="selectSlot('${b.name}','${t}','${dateStr}')">${t}</div>`;
+      const isSel=(calState.selectedBarber===b.nome&&calState.selectedTime===t);
+      html += `<div class="time-slot${isSel ? ' selected' : ''}" onclick="selectSlot(${b.id}, '${b.nome}', '${t}', '${dateStr}')">${t}</div>`;
     });
     html+=`</div></div>`;
   });
@@ -155,34 +166,112 @@ function selectDay(d,m,y){
   calState.selectedDay=d;calState.viewMonth=m;calState.selectedBarber=null;calState.selectedTime=null;
   buildCalendar();
 }
-function selectSlot(barberName,time,dateStr){
-  calState.selectedBarber=barberName;calState.selectedTime=time;
+function selectSlot(barberId, barberName, time, dateStr) {
+
+  state.barberId = barberId;
+  state.barber = barberName;
+
+  calState.selectedBarber = barberName;
+  calState.selectedTime = time;
+
   buildBarbers();
-  state.date=dateStr;state.barber=barberName;state.time=time;
-  document.getElementById('cf-srv').textContent=state.service.name;
-  document.getElementById('cf-barber').textContent=barberName;
-  document.getElementById('cf-date').textContent=dateStr;
-  document.getElementById('cf-time').textContent=time;
-  document.getElementById('cf-price').textContent=state.service.price;
+
+  state.date = dateStr;
+  state.time = time;
+
+  document.getElementById('cf-srv').textContent = state.service.name;
+  document.getElementById('cf-barber').textContent = barberName;
+  document.getElementById('cf-date').textContent = dateStr;
+  document.getElementById('cf-time').textContent = time;
+  document.getElementById('cf-price').textContent = state.service.price;
+
   gotoApp('a-confirm');
 }
 
-// ══ CONFIRM ══
-function finalizeBooking(){
-  const name=document.getElementById('inp-name').value.trim();
-  const phone=document.getElementById('inp-phone').value.trim();
-  if(!name||!phone){alert('Preencha seu nome e telefone para continuar.');return;}
-  const newAppt={service:state.service.name,barber:state.barber,date:state.date,time:state.time,price:state.service.price,name,phone};
-  if(state.editIdx!=null){appointments[state.editIdx]=newAppt;state.editIdx=null;}
-  else appointments.push(newAppt);
-  document.getElementById('inp-name').value='';
-  document.getElementById('inp-phone').value='';
-  calState.selectedDay=null;calState.selectedBarber=null;calState.selectedTime=null;
-  updateStats();
-  showSuccess(name);
+// ══ CONFIRM ══ | Agendamento enviado para o servidor através do método POST
+async function finalizeBooking() {
+
+  console.log("EDIT ID:", state.editId);
+  console.log("STATE:", state);
+
+  const name =
+    document.getElementById('inp-name').value.trim();
+
+  const phone =
+    document.getElementById('inp-phone').value.trim();
+
+  if (!name || !phone) {
+    alert('Preencha nome e telefone.');
+    return;
+  }
+
+  const partes = state.date.split('/');
+
+  const dataHora =
+    `${partes[2]}-${partes[1]}-${partes[0]}T${state.time}:00`;
+
+  const payload = {
+
+    AgendamentoId: state.editId || 0,
+
+    BarbeiroId: state.barberId,
+
+    ServicoId: state.serviceId,
+
+    DataHora: dataHora,
+
+    Status: "Confirmado",
+
+    ValorTotal: null,
+
+    NomeCliente: name,
+
+    TelefoneCliente: phone,
+
+    Observacoes: ""
+  };
+
+  const url = state.editId
+    ? "/Agendamentoes/AtualizarAgendamento"
+    : "/Agendamentoes/CriarAgendamento";
+
+  console.log(
+    "Payload enviado:",
+    JSON.stringify(payload, null, 2)
+  );
+
+  const resp = await fetch(
+    url,
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify(payload)
+    }
+  );
+
+  const data = await resp.json();
+
+  if (data.ok) {
+
+    resetState();
+    await updateStats();
+    await updateAppts();
+
+    showSuccess(name);
+
+  } else {
+
+    alert("Erro: " + data.erro);
+
+  }
 }
 
-function showSuccess(name){
+// Página de criacão com sucesso
+function showSuccess(name) {
   const overlay=document.createElement('div');
   overlay.className='success-overlay';
   overlay.innerHTML=`
@@ -193,82 +282,191 @@ function showSuccess(name){
   document.body.appendChild(overlay);
 }
 
-// ══ APPOINTMENTS ══
-function updateAppts(){
-  const list=document.getElementById('appts-list-desk');
-  const count=document.getElementById('appts-count-desk');
-  if(appointments.length===0){
-    list.innerHTML=`<div class="empty-state"><i class="ti ti-calendar-off"></i><p>Nenhum agendamento registrado.<br/>Faça sua reserva na aba Início.</p></div>`;
-    count.textContent='Nenhum agendamento';
+// ══ APPOINTMENTS ══ | Lê os agendamentos diretamente do banco de dados
+
+async function updateAppts() {
+
+  const resp = await fetch('/Agendamentoes/MeusAgendamentos');
+  appointments = await resp.json();
+
+  const list = document.getElementById('appts-list-desk');
+  const count = document.getElementById('appts-count-desk');
+
+  if (appointments.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <i class="ti ti-calendar-off"></i>
+      <p>Nenhum agendamento registrado.<br/>
+      Faça sua reserva na aba Início.</p>
+    </div>`;
+
+    count.textContent = 'Nenhum agendamento';
     return;
   }
-  count.textContent=`${appointments.length} agendamento${appointments.length>1?'s':''}`;
-  list.innerHTML=appointments.map((a,idx)=>`
-    <div class="appt-card">
-      <div class="appt-top">
+
+  // Constrói os agendamentos na página
+
+  count.textContent = `${appointments.length} agendamento${appointments.length > 1 ? 's' : ''}`;
+
+  list.innerHTML = appointments.map((a, idx) => `
+<div class="appt-card">
+
+    <div class="appt-top">
         <span class="appt-service">${a.service}</span>
         <span class="appt-badge">Confirmado</span>
-      </div>
-      <div class="appt-row"><i class="ti ti-user"></i><span>Barbeiro: <span class="hl">${a.barber}</span></span></div>
-      <div class="appt-row"><i class="ti ti-calendar"></i><span>${a.date} às <span class="hl">${a.time}</span></span></div>
-      <div class="appt-row"><i class="ti ti-tag"></i><span>Valor: <span class="hl-blue">${a.price}</span></span></div>
-      <div class="appt-row"><i class="ti ti-user-circle"></i><span class="hl">${a.name}</span><span>&nbsp;·&nbsp;${a.phone}</span></div>
-      <div class="appt-actions">
-        <button class="appt-btn appt-btn-edit" onclick="editAppt(${idx})"><i class="ti ti-pencil"></i> ALTERAR</button>
-        <button class="appt-btn appt-btn-cancel" onclick="confirmCancel(${idx})"><i class="ti ti-trash"></i> CANCELAR</button>
-      </div>
-    </div>`).join('');
+    </div>
+
+    <div class="appt-row">
+        <i class="ti ti-user"></i>
+        <span>Barbeiro: <span class="hl">${a.barber}</span></span>
+    </div>
+
+    <div class="appt-row">
+        <i class="ti ti-calendar"></i>
+        <span>${a.date} às <span class="hl">${a.time}</span></span>
+    </div>
+
+    <div class="appt-row">
+    <i class="ti ti-tag"></i>
+    <span>
+        Valor:
+        <span class="hl-blue">
+            ${a.price == null ? 'A consultar' : 'R$ ' + a.price}
+        </span>
+    </span>
+    </div>
+
+    <div class="appt-row">
+  <i class="ti ti-user-circle"></i>
+  <span class="hl">${a.name}</span>
+  <span>&nbsp;·&nbsp;${a.phone}</span>
+</div>
+    <div class="appt-actions">
+
+        <button
+            class="appt-btn appt-btn-edit"
+            onclick="editAppt(${a.id})"
+            <i class="ti ti-pencil"></i> ALTERAR
+        </button>
+
+        <button
+            class="appt-btn appt-btn-cancel"
+            onclick="deleteAppt(${a.id})">
+            <i class="ti ti-trash"></i> CANCELAR
+        </button>
+
+    </div>
+
+</div>
+`).join('');
 }
 
-function updateStats(){
-  document.getElementById('stat-total').textContent=appointments.length;
+// Atualiza quantidade total de agendamentos
+
+async function updateStats() {
+
+  const resp = await fetch('/Agendamentoes/MeusAgendamentos');
+  const appointments = await resp.json();
+
+  document.getElementById('stat-total').textContent =
+    appointments.length;
 }
 
-// ══ CANCEL ══
-function confirmCancel(idx){
-  const a=appointments[idx];
-  const modal=document.createElement('div');
-  modal.className='modal-overlay';
-  modal.id='cancel-modal';
-  modal.innerHTML=`
-    <div class="modal-box">
-      <div class="modal-title">Cancelar agendamento</div>
-      <div class="modal-sub">Deseja cancelar <span class="modal-service">${a.service}</span> com <strong style="color:var(--text)">${a.barber}</strong> em ${a.date} às ${a.time}?<br/>Esta ação não pode ser desfeita.</div>
-      <div class="modal-actions">
-        <button class="btn-danger" onclick="cancelAppt(${idx})"><i class="ti ti-trash"></i> SIM, CANCELAR</button>
-        <button class="btn-outline" onclick="closeModal()">MANTER AGENDAMENTO</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-}
-function cancelAppt(idx){
-  appointments.splice(idx,1);closeModal();updateAppts();updateStats();
-}
-function closeModal(){
-  const m=document.getElementById('cancel-modal');if(m)m.remove();
+
+// Exclui agendamento
+
+async function deleteAppt(id) {
+
+  if (!confirm('Deseja cancelar este agendamento?'))
+    return;
+
+  await fetch(
+    `/Agendamentoes/DeleteApi?id=${id}`,
+    {
+      method: 'POST'
+    }
+  );
+
+  await updateAppts();
+  await updateStats();
 }
 
-// ══ EDIT ══
-function editAppt(idx){
-  const a=appointments[idx];
-  state.service={name:a.service,price:a.price};
-  state.editIdx=idx;
-  const catKey=Object.keys(SERVICES).find(k=>SERVICES[k].some(s=>s.name===a.service))||'corte';
+// Altera/Atualiza o agendamento
+function editAppt(id) {
+
+  state.editId = id;
+
+  const a = appointments.find(x => x.id === id);
+
+  if (!a) return;
+
+  const catKey =
+    Object.keys(SERVICES).find(k =>
+      SERVICES[k].some(s => s.name === a.service)
+    ) || 'corte';
+
   showServices(catKey);
-  document.getElementById('srv-title-desk').textContent='Alterar: '+CAT_NAMES[catKey];
-  // override onclick to pass editIdx
-  document.querySelectorAll('#srv-list-desk .service-item').forEach((el,i)=>{
-    const srv=SERVICES[catKey][i];
-    el.onclick=()=>selectServiceEdit(srv,idx);
-  });
+
   gotoApp('a-services');
 }
-function selectServiceEdit(srv,idx){
-  state.service=srv;state.editIdx=idx;
-  document.getElementById('cal-srv-label-desk').textContent=srv.name+' (alteração)';
-  const now=new Date();
-  calState.year=now.getFullYear();calState.month=now.getMonth();calState.viewMonth=now.getMonth();
-  calState.selectedDay=null;calState.selectedBarber=null;calState.selectedTime=null;
-  buildCalendar();
-  gotoApp('a-calendar');
+
+
+
+
+// Redirecionamento para página de logout
+function doLogout() {
+  window.location.href = "/Account/Logout";
+}
+
+// Reseta os valores para null
+function resetState() {
+
+  state = {
+    service: null,
+    serviceId: null,
+    date: null,
+    barber: null,
+    barberId: null,
+    time: null,
+    editId: null
+  };
+
+}
+
+// carrega os dados do usuario no formulario de agendamento
+async function carregarDadosUsuario() { 
+
+  const resp = await fetch('/Account/UsuarioLogado');
+
+  if (!resp.ok)
+    return;
+
+  const usuario = await resp.json();
+
+  document.getElementById('inp-name').value =
+    usuario.nome;
+
+  document.getElementById('inp-phone').value =
+    usuario.telefone;
+}
+//lista barbeiros em json
+async function carregarBarbeiros() {
+
+  const resp =
+    await fetch('/Agendamentoes/ListarBarbeiros');
+
+  BARBERS =
+    await resp.json();
+
+  console.log("BARBEIROS:", BARBERS);
+}
+//lista servicos em json
+async function carregarServicos() {
+
+  const resp =
+    await fetch('/Agendamentoes/ListarServicos');
+
+  servicosDb =
+    await resp.json();
+
+  console.log("SERVICOS:", servicosDb);
 }

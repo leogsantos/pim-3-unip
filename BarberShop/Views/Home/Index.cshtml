@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = null;
 }
 
@@ -54,10 +54,22 @@
     </nav>
     <div class="sidebar-footer">
       <div class="user-card">
-        <div class="user-avatar" id="user-avatar-initials">JP</div>
+        <div class="user-avatar" id="user-avatar-initials">
+    @{
+        var nome = User.Identity?.Name ?? "";
+        var partes = nome.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        var iniciais =
+            partes.Length >= 2
+            ? $"{partes[0][0]}{partes[1][0]}"
+            : (partes.Length == 1 ? $"{partes[0][0]}" : "U");
+    }
+
+    @iniciais.ToUpper()
+</div>
         <div class="user-info"> 
-          <div class="user-name" id="sidebar-user-name">João Pedro</div>
-          <div class="user-email" id="sidebar-user-email">joao@email.com</div>
+        <div class="user-name" id="sidebar-user-name"> @User.Identity?.Name</div>
+        <div class="user-email" id="sidebar-user-email"> @User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</div>
         </div>
         <i class="ti ti-logout user-logout" title="Sair" onclick="doLogout()"></i>
       </div>
@@ -88,7 +100,7 @@
           <div class="page-sub">Escolha um serviço e agende seu horário</div>
         </div>
         <div class="stats-row">
-          <div class="stat-card">
+            <div class="stat-card" onclick="gotoApp('a-appts')" style="cursor:pointer;">
             <div class="stat-icon"><i class="ti ti-calendar-check"></i></div>
             <div class="stat-val" id="stat-total">0</div>
             <div class="stat-lbl">Agendamentos</div>

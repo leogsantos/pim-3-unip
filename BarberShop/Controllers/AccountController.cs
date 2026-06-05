@@ -1,12 +1,17 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using BarberShop.Data;
 using BarberShop.Models;
 using BarberShop.Utils;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace BarberShop.Controllers
 {
+    [AllowAnonymous]
     public class AccountController : Controller
     {
         private readonly AppDbContext _db;
@@ -44,7 +49,27 @@ namespace BarberShop.Controllers
 
             if (user != null)
             {
+                var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.Name, user.Nome),
+        new Claim(ClaimTypes.Email, user.Email),
+        new Claim(ClaimTypes.Role, user.TipoUsuario),
+        new Claim("UsuarioId", user.UsuarioId.ToString()),
+        new Claim("Telefone", user.Telefone ?? "")
+    };
+
+                var identity = new ClaimsIdentity(
+                    claims,
+                    CookieAuthenticationDefaults.AuthenticationScheme);
+
+                var principal = new ClaimsPrincipal(identity);
+
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    principal);
+
                 AppLogger.Info($"Login bem-sucedido: {usuario}");
+
                 return RedirectToAction("Index", "Home");
             }
 
@@ -147,5 +172,37 @@ namespace BarberShop.Controllers
                 return Json(new { ok = false, erro = "Erro interno ao salvar. Tente novamente." });
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme);
+
+            AppLogger.Info("Usuário realizou logout.");
+
+            return RedirectToAction("Login", "Account");
+        }
+        [HttpGet]
+        public async Task<IActionResult> UsuarioLogado() // pega id do usuario para os campos de agendamento
+        {
+            var usuarioIdClaim = User.FindFirst("UsuarioId")?.Value;
+
+            if (string.IsNullOrEmpty(usuarioIdClaim))
+                return Unauthorized();
+
+            var usuario = await _db.Usuarios
+                .FirstOrDefaultAsync(u => u.UsuarioId == int.Parse(usuarioIdClaim));
+
+            if (usuario == null)
+                return NotFound();
+
+            return Json(new
+            {
+                nome = usuario.Nome,
+                telefone = usuario.Telefone
+            });
+        }
     }
+
 }

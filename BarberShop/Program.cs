@@ -1,11 +1,21 @@
 using Microsoft.EntityFrameworkCore;
 using BarberShop.Data;
 using BarberShop.Utils;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Registra os controllers e views MVC
 builder.Services.AddControllersWithViews();
+
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Account/Login";
+    });
 
 // Configuração do banco de dados
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -28,7 +38,10 @@ app.UseHttpsRedirection();
 
 // UseStaticFiles serve os arquivos da pasta wwwroot/ (css, js, lib, imagens...)
 app.UseStaticFiles();
+
 app.UseRouting();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
