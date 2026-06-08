@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BarberShop.Data;
 using BarberShop.Models;
+using BarberShop.Utils;
 
 namespace BarberShop.Controllers
 {
@@ -22,6 +23,7 @@ namespace BarberShop.Controllers
         // GET: Barbeiroes
         public async Task<IActionResult> Index()
         {
+            AppLogger.Info("Listagem de barbeiros acessada.");
             return View(await _context.Barbeiros.ToListAsync());
         }
 
@@ -60,6 +62,7 @@ namespace BarberShop.Controllers
             {
                 _context.Add(barbeiro);
                 await _context.SaveChangesAsync();
+                AppLogger.Info($"Barbeiro cadastrado: {barbeiro.Nome} (e-mail: {barbeiro.Email})");
                 return RedirectToAction(nameof(Index));
             }
             return View(barbeiro);
@@ -99,11 +102,13 @@ namespace BarberShop.Controllers
                 {
                     _context.Update(barbeiro);
                     await _context.SaveChangesAsync();
+                    AppLogger.Info($"Barbeiro editado: ID {id} ({barbeiro.Nome})");
                 }
                 catch (DbUpdateConcurrencyException)
                 {
                     if (!BarbeiroExists(barbeiro.BarbeiroId))
                     {
+                        AppLogger.Warning($"Edição: barbeiro não encontrado ao salvar: ID {id}");
                         return NotFound();
                     }
                     else
@@ -143,9 +148,14 @@ namespace BarberShop.Controllers
             if (barbeiro != null)
             {
                 _context.Barbeiros.Remove(barbeiro);
+                await _context.SaveChangesAsync();
+                AppLogger.Warning($"Barbeiro excluído: ID {id} ({barbeiro.Nome})");
+            }
+            else
+            {
+                AppLogger.Warning($"Tentativa de excluir barbeiro não encontrado: ID {id}");
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

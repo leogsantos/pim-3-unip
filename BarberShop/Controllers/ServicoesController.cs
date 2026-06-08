@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BarberShop.Data;
 using BarberShop.Models;
+using BarberShop.Utils;
 
 namespace BarberShop.Controllers
 {
@@ -22,6 +23,7 @@ namespace BarberShop.Controllers
         // GET: Servicoes
         public async Task<IActionResult> Index()
         {
+            AppLogger.Info("Listagem de serviços acessada.");
             var appDbContext = _context.Servicos.Include(s => s.Categoria);
             return View(await appDbContext.ToListAsync());
         }
@@ -63,6 +65,7 @@ namespace BarberShop.Controllers
             {
                 _context.Add(servico);
                 await _context.SaveChangesAsync();
+                AppLogger.Info($"Serviço cadastrado: {servico.Nome} (R$ {servico.Preco})");
                 return RedirectToAction(nameof(Index));
             }
             ViewData["CategoriaServicoId"] = new SelectList(_context.CategoriaServicos, "CategoriaServicoId", "Nome", servico.CategoriaServicoId);
@@ -104,11 +107,13 @@ namespace BarberShop.Controllers
                 {
                     _context.Update(servico);
                     await _context.SaveChangesAsync();
+                    AppLogger.Info($"Serviço editado: ID {id} ({servico.Nome})");
                 }
                 catch (DbUpdateConcurrencyException)
                 {
                     if (!ServicoExists(servico.ServicoId))
                     {
+                        AppLogger.Warning($"Edição: serviço não encontrado ao salvar: ID {id}");
                         return NotFound();
                     }
                     else
@@ -150,9 +155,14 @@ namespace BarberShop.Controllers
             if (servico != null)
             {
                 _context.Servicos.Remove(servico);
+                await _context.SaveChangesAsync();
+                AppLogger.Warning($"Serviço excluído: ID {id} ({servico.Nome})");
+            }
+            else
+            {
+                AppLogger.Warning($"Tentativa de excluir serviço não encontrado: ID {id}");
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
