@@ -29,9 +29,9 @@ from functools import wraps
 # CONFIGURAÇÕES
 # ==================================================================================
 
-QTDE_USUARIOS = 100
+QTDE_USUARIOS = 10
 QTDE_BARBEIROS_EXTRAS = 7  # Total será 10 (3 já existem no seed)
-QTDE_AGENDAMENTOS = 500
+QTDE_AGENDAMENTOS = 200
 
 # Configuração do Faker
 fake = Faker('pt_BR')
@@ -61,7 +61,7 @@ def conectar_banco():
     try:
         conn = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server};'  # Precisa ter o driver instalado -> https://go.microsoft.com/fwlink/?linkid=2249004
-            'SERVER=.\SQLEXPRESS;'
+            'SERVER=(localdb)\\MSSQLLocalDB;'
             'DATABASE=BarbeariaJLMGG;'  # Nome do nosso banco de dados
             'Trusted_Connection=yes;'
         )
