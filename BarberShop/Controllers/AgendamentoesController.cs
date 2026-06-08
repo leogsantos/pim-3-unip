@@ -1,12 +1,13 @@
+using BarberShop.Data;
+using BarberShop.Models;
+using BarberShop.Utils;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using BarberShop.Data;
-using BarberShop.Models;
 
 namespace BarberShop.Controllers
 {
@@ -21,7 +22,15 @@ namespace BarberShop.Controllers
         [HttpGet]
         public async Task<IActionResult> MeusAgendamentos()
         {
+            var usuarioIdClaim = User.FindFirst("UsuarioId")?.Value;
+
+            if (string.IsNullOrEmpty(usuarioIdClaim))
+                return Unauthorized();
+
+            var usuarioId = int.Parse(usuarioIdClaim);
+
             var lista = await _context.Agendamentos
+                .Where(a => a.UsuarioId == usuarioId)
                 .Include(a => a.Barbeiro)
                 .Include(a => a.Servico)
                 .OrderByDescending(a => a.DataHora)
@@ -179,8 +188,13 @@ namespace BarberShop.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteApi(int id)
         {
-            var agendamento =
-                await _context.Agendamentos.FindAsync(id);
+            var usuarioId = int.Parse(
+                User.FindFirst("UsuarioId")!.Value);
+
+            var agendamento = await _context.Agendamentos
+                .FirstOrDefaultAsync(a =>
+                    a.AgendamentoId == id &&
+                    a.UsuarioId == usuarioId);
 
             if (agendamento == null)
                 return NotFound();
@@ -188,6 +202,9 @@ namespace BarberShop.Controllers
             _context.Agendamentos.Remove(agendamento);
 
             await _context.SaveChangesAsync();
+
+            AppLogger.Warning(
+                $"Agendamento cancelado | Id={agendamento.AgendamentoId} | Usuario={agendamento.UsuarioId}");
 
             return Json(new { ok = true });
         }
@@ -240,25 +257,44 @@ namespace BarberShop.Controllers
 
                 await _context.SaveChangesAsync();
 
+                AppLogger.Info(
+                    $"Agendamento criado | Id={agendamento.AgendamentoId} | Usuario={usuario.Email} | Servico={agendamento.ServicoId} | Data={agendamento.DataHora}");
+
                 return Json(new { ok = true });
             }
             catch (Exception ex)
             {
+                AppLogger.Error(
+                    "Erro ao criar agendamento",
+                    ex
+                );
+
                 return Json(new
                 {
                     ok = false,
-                    erro = ex.ToString()
+                    erro = ex.Message
                 });
             }
+            finally
+            {
+                AppLogger.Info("Finalizada tentativa de criação de agendamento.");
+            }
+
         }
+        
 
         [HttpPost]
         public async Task<IActionResult> AtualizarAgendamento([FromBody] Agendamento agendamento)
         {
             try
             {
-                var existente = await _context.Agendamentos
-                    .FirstOrDefaultAsync(a => a.AgendamentoId == agendamento.AgendamentoId);
+                    var usuarioId = int.Parse(
+                        User.FindFirst("UsuarioId")!.Value);
+
+                    var existente = await _context.Agendamentos
+                        .FirstOrDefaultAsync(a =>
+                        a.AgendamentoId == agendamento.AgendamentoId &&
+                        a.UsuarioId == usuarioId);
 
                 if (existente == null)
                     return Json(new { ok = false, erro = "Agendamento não encontrado" });
@@ -278,16 +314,29 @@ namespace BarberShop.Controllers
 
                 await _context.SaveChangesAsync();
 
+                AppLogger.Info(
+                    $"Agendamento alterado | Id={existente.AgendamentoId} | Usuario={existente.UsuarioId}");
+
                 return Json(new { ok = true });
             }
             catch (Exception ex)
             {
+                AppLogger.Error(
+                    "Erro ao criar agendamento",
+                    ex
+                );
+
                 return Json(new
                 {
                     ok = false,
                     erro = ex.Message
                 });
             }
+            finally
+            {
+                AppLogger.Info("Finalizada tentativa de atualizacão de agendamento.");
+            }
+
         }
 
         private bool AgendamentoExists(int id)

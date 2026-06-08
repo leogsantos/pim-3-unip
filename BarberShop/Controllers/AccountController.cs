@@ -44,19 +44,35 @@ namespace BarberShop.Controllers
         {
             AppLogger.Info($"Tentativa de login: {usuario}");
 
-            var user = await _db.Usuarios
-                .FirstOrDefaultAsync(u => u.Email == usuario && u.Senha == senha && u.Ativo);
+            try
+            {
+                if (string.IsNullOrWhiteSpace(usuario))
+                    throw new Exception("E-mail não informado.");
 
-            if (user != null)
-            {
+                if (string.IsNullOrWhiteSpace(senha))
+                    throw new Exception("Senha não informada.");
+
+                var user = await _db.Usuarios
+                    .FirstOrDefaultAsync(u =>
+                        u.Email == usuario &&
+                        u.Senha == senha &&
+                        u.Ativo);
+
+                if (user == null)
+                {
+                    AppLogger.Warning($"Login falhou: {usuario}");
+                    ViewBag.Erro = "E-mail ou senha incorretos.";
+                    return View("Login");
+                }
+
                 var claims = new List<Claim>
-            {
+        {
                 new Claim(ClaimTypes.Name, user.Nome),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, user.TipoUsuario),
                 new Claim("UsuarioId", user.UsuarioId.ToString()),
                 new Claim("Telefone", user.Telefone ?? "")
-            };
+        };
 
                 var identity = new ClaimsIdentity(
                     claims,
@@ -68,14 +84,21 @@ namespace BarberShop.Controllers
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     principal);
 
-                AppLogger.Info($"Login bem-sucedido: {usuario}");
+                AppLogger.Info($"Login realizado com sucesso: {usuario}");
 
                 return RedirectToAction("Index", "Home");
             }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"Erro durante login: {usuario}", ex);
 
-            AppLogger.Warning($"Login falhou (e-mail ou senha incorretos): {usuario}");
-            ViewBag.Erro = "E-mail ou senha incorretos.";
-            return View("Login");
+                ViewBag.Erro = "Erro interno ao realizar login.";
+                return View("Login");
+            }
+            finally
+            {
+                AppLogger.Info($"Fim do processamento de login: {usuario}");
+            }
         }
 
         // Chamado pelo JS (fetch) na tela de Registro ao clicar em CADASTRAR
@@ -126,6 +149,10 @@ namespace BarberShop.Controllers
                 AppLogger.Error($"Erro ao cadastrar usuário: {email}", ex);
                 return Json(new { ok = false, erro = "Erro interno ao salvar. Tente novamente." });
             }
+            finally
+            {
+                AppLogger.Info($"Fim do processamento de cadastro: {email}");
+            }
         }
 
         // Chamado pelo JS na tela EsqueceuSenha — verifica se o e-mail existe no banco
@@ -147,29 +174,40 @@ namespace BarberShop.Controllers
         [HttpPost]
         public async Task<IActionResult> RedefinirSenha([FromBody] JsonElement body)
         {
-            var email     = body.GetProperty("email").GetString() ?? "";
+            var email = body.GetProperty("email").GetString() ?? "";
             var novaSenha = body.GetProperty("novaSenha").GetString() ?? "";
-
-            AppLogger.Info($"Redefinição de senha solicitada: {email}");
-
-            var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.Email == email && u.Ativo);
-            if (usuario == null)
-            {
-                AppLogger.Warning($"Redefinição de senha: usuário não encontrado: {email}");
-                return Json(new { ok = false, erro = "Usuário não encontrado." });
-            }
 
             try
             {
+                AppLogger.Info($"Redefinição de senha solicitada: {email}");
+
+                var usuario = await _db.Usuarios
+                    .FirstOrDefaultAsync(u => u.Email == email && u.Ativo);
+
+                if (usuario == null)
+                    throw new Exception("Usuário não encontrado.");
+
                 usuario.Senha = novaSenha;
+
                 await _db.SaveChangesAsync();
+
                 AppLogger.Info($"Senha redefinida com sucesso: {email}");
+
                 return Json(new { ok = true });
             }
             catch (Exception ex)
             {
                 AppLogger.Error($"Erro ao redefinir senha: {email}", ex);
-                return Json(new { ok = false, erro = "Erro interno ao salvar. Tente novamente." });
+
+                return Json(new
+                {
+                    ok = false,
+                    erro = ex.Message
+                });
+            }
+            finally
+            {
+                AppLogger.Info($"Fim do processamento de redefinição de senha: {email}");
             }
         }
 
