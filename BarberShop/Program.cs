@@ -28,24 +28,30 @@ var app = builder.Build();
 // Aponta o logger para a pasta logs/ dentro da raiz do projeto
 AppLogger.Init(app.Environment.ContentRootPath);
 
+AppLogger.Info($"Ambiente: {app.Environment.EnvironmentName}");
+AppLogger.Info($"Banco de dados: {builder.Configuration.GetConnectionString("DefaultConnection")}");
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
+    AppLogger.Info("Modo: PRODUÇÃO (HSTS habilitado)");
+}
+else
+{
+    AppLogger.Info("Modo: DESENVOLVIMENTO");
 }
 
 app.UseHttpsRedirection();
-
-// UseStaticFiles serve os arquivos da pasta wwwroot/ (css, js, lib, imagens...)
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
+
+AppLogger.Info("=== APLICAÇÃO PRONTA PARA RECEBER REQUISIÇÕES ===");
 
 app.Run();
