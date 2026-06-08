@@ -29,6 +29,8 @@ namespace BarberShop.Controllers
 
             var usuarioId = int.Parse(usuarioIdClaim);
 
+            AppLogger.Info($"Usuário ID {usuarioIdClaim} consultou seus agendamentos.");
+
             var lista = await _context.Agendamentos
                 .Where(a => a.UsuarioId == usuarioId)
                 .Include(a => a.Barbeiro)
